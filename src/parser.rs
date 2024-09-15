@@ -3,7 +3,7 @@ pub enum Commands {
     AddEnvPath,
     AddEnvVar,
 }
-
+#[cfg(windows)]
 pub fn command(inputs: &[String]) -> Option<Commands> {
     for input in inputs {
         if !input.starts_with("--") {
@@ -11,6 +11,21 @@ pub fn command(inputs: &[String]) -> Option<Commands> {
         }
         match input.as_str() {
             "--add_env_path" => return Some(Commands::AddEnvPath),
+            "--add_env_var" => return Some(Commands::AddEnvVar),
+            "--help" => return Some(Commands::Help),
+            _ => continue,
+        }
+    }
+    None
+}
+
+#[cfg(unix)]
+pub fn command(inputs: &[String]) -> Option<Commands> {
+    for input in inputs {
+        if !input.starts_with("--") {
+            continue;
+        }
+        match input.as_str() {
             "--add_env_var" => return Some(Commands::AddEnvVar),
             "--help" => return Some(Commands::Help),
             _ => continue,

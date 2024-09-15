@@ -63,24 +63,8 @@ pub fn add_env_path(args: Option<Vec<String>>, opts: Option<Vec<String>>) -> Res
     #[cfg(target_os = "windows")]
     let mode = if sys_mode { "Machine" } else { "User" };
 
-    #[cfg(target_family = "unix")]
-    let mut config_path: String = String::new();
-
-    // #[cfg(target_family = "unix")]
-    // if let Err(e) = check_config_path(&mut config_path, sys_mode) {
-    //     return Err(format!(
-    //         "invalid config path {}, error: {}",
-    //         &config_path, &e
-    //     ));
-    // }
-
     let mut path = String::new();
     for arg in &_args {
-        #[cfg(target_family = "unix")]
-        {
-            path += ":";
-        }
-
         path += arg;
 
         #[cfg(target_os = "windows")]
@@ -105,26 +89,6 @@ pub fn add_env_path(args: Option<Vec<String>>, opts: Option<Vec<String>>) -> Res
         path, mode
     )) {
         return Err("Failed to set environment path".parse().unwrap());
-    }
-
-    #[cfg(target_family = "unix")]
-    {
-        let output = std::process::Command::new("echo")
-            .arg(format!("\"export PATH=$PATH{}\"", path))
-            .arg(">>")
-            .arg(&config_path)
-            .arg("&&")
-            .arg("source")
-            .arg(&config_path)
-            .output()
-            .expect("Failed to execute shell command");
-        if !output.status.success() {
-            return Err(format!(
-                "Failed to execute shell command, error:{}",
-                String::from_utf8_lossy(&output.stderr)
-            ));
-        }
-        println!("{}", String::from_utf8_lossy(&output.stdout));
     }
 
     Ok(())
@@ -182,25 +146,32 @@ pub fn add_env_var(args: Option<Vec<String>>, opts: Option<Vec<String>>) -> Resu
 
         #[cfg(target_family = "unix")]
         {
-            let output = std::process::Command::new("echo")
-                .arg(format!("\"export {}=\"{}\"", var, val))
-                .arg(">>")
-                .arg(&config_path)
+            println!("{}", &config_path);
+            let output = std::process::Command::new("bash")
+                .arg("-c")
+                .arg(format!(
+                    "echo \'export {}=\"{}\"\' >> {}",
+                    var, val, &config_path
+                ))
                 .output()
                 .expect("Failed to execute shell command");
+            println!("yes");
             if !output.status.success() {
                 return Err(format!(
                     "Failed to execute shell command, error:{}",
                     String::from_utf8_lossy(&output.stderr)
                 ));
             }
+            println!("succeed");
         }
     }
 
     #[cfg(target_family = "unix")]
     {
-        let output = std::process::Command::new("source")
-            .arg(&config_path)
+        println!("{}", &config_path);
+        let output = std::process::Command::new("bash")
+            .arg("-c")
+            .arg(format!("source {}", &config_path))
             .output()
             .expect("Failed to execute shell command");
         if !output.status.success() {
